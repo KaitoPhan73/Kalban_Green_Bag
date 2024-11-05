@@ -23,6 +23,7 @@ import com.example.kalban_greenbag.service.IOrderService;
 import com.example.kalban_greenbag.service.IProductService;
 import com.example.kalban_greenbag.utils.SecurityUtil;
 import com.example.kalban_greenbag.utils.ValidateUtil;
+import java.text.SimpleDateFormat;
 
 import java.text.DateFormat;
 import java.time.LocalDate;
@@ -66,6 +67,19 @@ public class OrderServiceImpl implements IOrderService {
         return (int) orderRepository.count();
     }
 
+        public int totalItemFromDate() {
+        try {
+            // Create the start date for October 26
+            Date startDate = new SimpleDateFormat("yyyy-MM-dd").parse("2024-10-26");
+
+            // Call repository to count orders from the start date
+            return (int) orderRepository.countOrdersFrom(startDate);
+        } catch (Exception e) {
+            e.printStackTrace(); // Handle exception if date parsing fails
+            return 0;
+        }
+    }
+
     @Override
     public OrderResponse findById(UUID id) throws BaseException {
         try {
@@ -102,7 +116,7 @@ public class OrderServiceImpl implements IOrderService {
     }
 
 
-    @Override
+  @Override
     public PagingModel<OrderResponse> getAll(Integer page, Integer limit) throws BaseException {
         try {
             if (page == null || page < 1) {
@@ -121,7 +135,8 @@ public class OrderServiceImpl implements IOrderService {
 //            if (redisTemplate.opsForHash().hasKey(ConstHashKeyPrefix.HASH_KEY_PREFIX_FOR_ORDER, cacheKey)) {
 //                orderResponseList = (List<OrderResponse>) redisTemplate.opsForHash().get(ConstHashKeyPrefix.HASH_KEY_PREFIX_FOR_ORDER, cacheKey);
 //            } else {
-                Page<Order> ordersPage = orderRepository.findAllByOrderByCreatedDateDesc(pageable);
+            Date startDate = new SimpleDateFormat("yyyy-MM-dd").parse("2024-10-26");
+            Page<Order> ordersPage = orderRepository.findAllByCreatedDateFrom(startDate, pageable);
                 orderResponseList = ordersPage.stream()
                         .map(order -> modelMapper.map(order, OrderResponse.class))
                         .toList();
@@ -131,19 +146,12 @@ public class OrderServiceImpl implements IOrderService {
 
             result.setPage(page);
             result.setListResult(orderResponseList);
-            result.setTotalPage((int) Math.ceil((double) totalItem() / limit));
+            result.setTotalPage((int) Math.ceil((double) totalItemFromDate() / limit));
             result.setLimit(limit);
 
             return result;
-        } catch (Exception exception) {
-            if (exception instanceof BaseException) {
-                throw exception;
-            }
-            throw new BaseException(
-                    ErrorCode.ERROR_500.getCode(),
-                    exception.getMessage(),
-                    ErrorCode.ERROR_500.getMessage()
-            );
+        } catch (Exception baseException) {
+            throw new BaseException(ErrorCode.ERROR_500.getCode(), baseException.getMessage(), ErrorCode.ERROR_500.getMessage());
         }
     }
 
