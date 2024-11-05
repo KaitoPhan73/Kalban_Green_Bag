@@ -19,7 +19,11 @@ import java.util.UUID;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, UUID> {
 
-    Page<Order> findAllByOrderByCreatedDateDesc(Pageable pageable);
+       @Query("SELECT COUNT(o) FROM Order o WHERE o.createdDate >= :startDate and o.orderStatus = 'PAID'")
+    long countOrdersFrom(@Param("startDate") Date startDate);
+
+    @Query("SELECT o FROM Order o WHERE o.createdDate >= :startDate  and o.orderStatus = 'PAID' ORDER BY o.createdDate DESC")
+    Page<Order> findAllByCreatedDateFrom(@Param("startDate") Date startDate, Pageable pageable);
     List<Order> findAllByStatusOrderByCreatedDateDesc(String status, Pageable pageable);
     Page<Order> findByOrderCode(long orderCode, Pageable pageable);
 
