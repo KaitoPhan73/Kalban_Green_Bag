@@ -29,18 +29,26 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
     @Query("SELECT p FROM Product p WHERE p.finalPrice BETWEEN :minPrice AND :maxPrice AND p.status = 'ACTIVE'")
     List<Product> findAllByPriceRange(@Param("minPrice") BigDecimal minPrice, @Param("maxPrice") BigDecimal maxPrice, Pageable pageable);
 
-    @Query("SELECT p FROM Product p WHERE p.productName LIKE %:name% AND p.finalPrice BETWEEN :minPrice AND :maxPrice AND p.status = 'ACTIVE'")
-    List<Product> findAllByProductNameContainingAndPriceRange(@Param("name") String name,
+
+    @Query("SELECT p FROM Product p WHERE (:name IS NULL OR p.productName LIKE %:name%) " +
+        "AND (:minPrice IS NULL OR p.finalPrice >= :minPrice) " +
+        "AND (:maxPrice IS NULL OR p.finalPrice <= :maxPrice) " +
+        "AND (:baseModelId IS NULL OR p.baseModelID.id = :baseModelId) " +
+        "AND p.status = 'ACTIVE'")
+    List<Product> findAllByCriteria(@Param("name") String name,
         @Param("minPrice") BigDecimal minPrice,
         @Param("maxPrice") BigDecimal maxPrice,
+        @Param("baseModelId") UUID baseModelId,
         Pageable pageable);
 
     @Query("SELECT COUNT(p) FROM Product p WHERE (:name IS NULL OR p.productName LIKE %:name%) " +
         "AND (:minPrice IS NULL OR p.finalPrice >= :minPrice) " +
         "AND (:maxPrice IS NULL OR p.finalPrice <= :maxPrice) " +
+        "AND (:baseModelId IS NULL OR p.baseModelID.id = :baseModelId) " +
         "AND p.status = 'ACTIVE'")
     int countByCriteria(@Param("name") String name,
         @Param("minPrice") BigDecimal minPrice,
-        @Param("maxPrice") BigDecimal maxPrice);
+        @Param("maxPrice") BigDecimal maxPrice,
+        @Param("baseModelId") UUID baseModelId);
 
 }

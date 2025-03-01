@@ -106,8 +106,10 @@ public class ProductController {
         @RequestParam(value = "limit", required = false) Integer limit,
         @RequestParam(value = "name", required = false) String name,
         @RequestParam(value = "minPrice", required = false) BigDecimal minPrice,
-        @RequestParam(value = "maxPrice", required = false) BigDecimal maxPrice
+        @RequestParam(value = "maxPrice", required = false) BigDecimal maxPrice,
+        @RequestParam(value = "baseModelId", required = false)  UUID baseModelId
+
     ) throws BaseException {
-        return productService.getProductByNameAndPriceRange(name, minPrice, maxPrice, page, limit);
+        return productService.getProductByNameAndPriceRange(name, minPrice, maxPrice,baseModelId, page, limit);
     }
 }

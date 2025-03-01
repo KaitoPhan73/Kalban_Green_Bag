@@ -292,9 +292,8 @@ public class ProductServiceImpl implements IProductService {
                     ErrorCode.ERROR_500.getMessage());
         }
     }
-
     @Override
-    public PagingModel<ProductResponse> getProductByNameAndPriceRange(String name, BigDecimal minPrice, BigDecimal maxPrice, Integer page, Integer limit) throws BaseException {
+    public PagingModel<ProductResponse> getProductByNameAndPriceRange(String name, BigDecimal minPrice, BigDecimal maxPrice, UUID baseModelId, Integer page, Integer limit) throws BaseException {
         try {
             if (page == null || limit == null) {
                 page = 1;
@@ -304,24 +303,11 @@ public class ProductServiceImpl implements IProductService {
             PagingModel<ProductResponse> result = new PagingModel<>();
             result.setPage(page);
             Pageable pageable = PageRequest.of(page - 1, limit);
-            List<Product> productList;
 
-            // Kiểm tra các điều kiện tìm kiếm
-            if ((name == null || name.isEmpty()) && (minPrice == null && maxPrice == null)) {
-                // Không có điều kiện, lấy tất cả sản phẩm
-                productList = productRepository.findAllByStatusOrderByCreatedDateDesc(ConstStatus.ACTIVE_STATUS, pageable);
-            } else if (name != null && (minPrice == null && maxPrice == null)) {
-                // Tìm theo tên sản phẩm
-                productList = productRepository.findAllByProductNameContaining(name, pageable);
-            } else if (name == null && (minPrice != null || maxPrice != null)) {
-                // Tìm theo khoảng giá
-                productList = productRepository.findAllByPriceRange(minPrice, maxPrice, pageable);
-            } else {
-                // Tìm theo cả tên và khoảng giá
-                productList = productRepository.findAllByProductNameContainingAndPriceRange(name, minPrice, maxPrice, pageable);
-            }
+            // Tìm kiếm theo các tiêu chí (bao gồm baseModelId)
+            List<Product> productList = productRepository.findAllByCriteria(name, minPrice, maxPrice, baseModelId, pageable);
 
-            // Nếu không tìm thấy sản phẩm, trả về mảng trống
+            // Nếu không tìm thấy sản phẩm, trả về danh sách trống
             if (productList == null || productList.isEmpty()) {
                 result.setListResult(Collections.emptyList());
                 result.setTotalPage(0);
@@ -329,21 +315,15 @@ public class ProductServiceImpl implements IProductService {
                 return result;
             }
 
-            // Chuyển đổi kết quả tìm kiếm sang dạng ProductResponse
+            // Chuyển đổi kết quả sang ProductResponse
             List<ProductResponse> productResponses = productList.stream()
                 .map(product -> modelMapper.map(product, ProductResponse.class))
                 .toList();
 
             result.setListResult(productResponses);
 
-            // Cập nhật totalPage
-            int totalItems;
-            if ((name == null || name.isEmpty()) && (minPrice == null && maxPrice == null)) {
-                totalItems = totalActiveItems(); // Tổng sản phẩm đang hoạt động
-            } else {
-                totalItems = productRepository.countByCriteria(name, minPrice, maxPrice); // Tổng sản phẩm theo điều kiện
-            }
-
+            // Tính tổng số trang
+            int totalItems = productRepository.countByCriteria(name, minPrice, maxPrice, baseModelId);
             result.setTotalPage((int) Math.ceil((double) totalItems / limit));
             result.setLimit(limit);
 
@@ -354,6 +334,68 @@ public class ProductServiceImpl implements IProductService {
                 ErrorCode.ERROR_500.getMessage());
         }
     }
+
+//    @Override
+//    public PagingModel<ProductResponse> getProductByNameAndPriceRange(String name, BigDecimal minPrice, BigDecimal maxPrice,UUID baseModelId, Integer page, Integer limit) throws BaseException {
+//        try {
+//            if (page == null || limit == null) {
+//                page = 1;
+//                limit = 10;
+//            }
+//
+//            PagingModel<ProductResponse> result = new PagingModel<>();
+//            result.setPage(page);
+//            Pageable pageable = PageRequest.of(page - 1, limit);
+//            List<Product> productList;
+//
+//            // Kiểm tra các điều kiện tìm kiếm
+//            if ((name == null || name.isEmpty()) && (minPrice == null && maxPrice == null)) {
+//                // Không có điều kiện, lấy tất cả sản phẩm
+//                productList = productRepository.findAllByStatusOrderByCreatedDateDesc(ConstStatus.ACTIVE_STATUS, pageable);
+//            } else if (name != null && (minPrice == null && maxPrice == null)) {
+//                // Tìm theo tên sản phẩm
+//                productList = productRepository.findAllByProductNameContaining(name, pageable);
+//            } else if (name == null && (minPrice != null || maxPrice != null)) {
+//                // Tìm theo khoảng giá
+//                productList = productRepository.findAllByPriceRange(minPrice, maxPrice, pageable);
+//            } else {
+//                // Tìm theo cả tên và khoảng giá
+//                productList = productRepository.findAllByProductNameContainingAndPriceRange(name, minPrice, maxPrice, pageable);
+//            }
+//
+//            // Nếu không tìm thấy sản phẩm, trả về mảng trống
+//            if (productList == null || productList.isEmpty()) {
+//                result.setListResult(Collections.emptyList());
+//                result.setTotalPage(0);
+//                result.setLimit(limit);
+//                return result;
+//            }
+//
+//            // Chuyển đổi kết quả tìm kiếm sang dạng ProductResponse
+//            List<ProductResponse> productResponses = productList.stream()
+//                .map(product -> modelMapper.map(product, ProductResponse.class))
+//                .toList();
+//
+//            result.setListResult(productResponses);
+//
+//            // Cập nhật totalPage
+//            int totalItems;
+//            if ((name == null || name.isEmpty()) && (minPrice == null && maxPrice == null)) {
+//                totalItems = totalActiveItems(); // Tổng sản phẩm đang hoạt động
+//            } else {
+//                totalItems = productRepository.countByCriteria(name, minPrice, maxPrice); // Tổng sản phẩm theo điều kiện
+//            }
+//
+//            result.setTotalPage((int) Math.ceil((double) totalItems / limit));
+//            result.setLimit(limit);
+//
+//            return result;
+//        } catch (Exception exception) {
+//            throw new BaseException(ErrorCode.ERROR_500.getCode(),
+//                exception.getMessage(),
+//                ErrorCode.ERROR_500.getMessage());
+//        }
+//    }
 
 
 }
